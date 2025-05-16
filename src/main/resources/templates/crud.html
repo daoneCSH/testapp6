@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${title}">Title</title>
+    <form id="dbForm" method="GET" th:action="@{/test/set}">
+        <label>
+            <input type="radio" name="db" value="DB1" th:checked="${selectedDb} == 'DB1' or ${selectedDb} == null" onchange="document.getElementById('dbForm').submit()"> MARIADB
+        </label>
+        <label>
+            <input type="radio" name="db" value="DB2" th:checked="${selectedDb} == 'DB2'" onchange="document.getElementById('dbForm').submit()"> PGSQL
+        </label>
+        <label>
+            <input type="radio" name="db" value="DB3" th:checked="${selectedDb} == 'DB3'" onchange="document.getElementById('dbForm').submit()"> MYSQL
+        </label>
+<!--        <label>-->
+<!--            <input type="radio" name="db" value="DB4" th:checked="${selectedDb} == 'DB4'" onchange="document.getElementById('dbForm').submit()"> ORACLE-->
+<!--        </label>-->
+    </form>
+</head>
+<body>
+    <h1 th:text="#{crud.title}">title</h1>
+    <p th:if="${complete}" th:text="${complete}" style="color: blue;"></p>
+
+    <form method="POST"
+          th:action="${testForm.isLogin}? @{/test/check} : @{/test/insert}"
+          th:object="${testForm}">
+
+        <label th:text="#{crud.account}"></label><label>:</label>
+        <input type="text" th:field="*{uid}" />
+        <div th:if="${#fields.hasErrors('uid')}" th:errors="*{uid}" style="color: red;"></div>
+        <br>
+        <label th:text="#{crud.password}"></label><label>:</label>
+        <input type="text" th:field="*{password}" />
+        <input th:if="${testForm.isLogin}" type="submit" th:value="#{crud.check}">
+        <input th:unless="${testForm.isLogin}" type="submit" th:value="#{crud.join}">
+        <br>
+        <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" style="color: red;"></div>
+
+
+    </form>
+    <hr>
+    <p th:if="${testForm.isLogin}">
+        <label th:text="#{crud.login}"></label>
+    </p>
+    <p th:if="${delcomplete}" th:text="${delcomplete}" style="color:blue"></p>
+    <p th:if="${checkcomplete}" th:text="${checkcomplete}" style="color: blue;"></p>
+    <p th:if="${changedDBcomplete}" th:text="${changedDBcomplete}" style="color: blue;"></p>
+    <p th:if="${msg}" th:text="${msg}" style="color:red"></p>
+    <table border="1" th:unless="${#lists.isEmpty(list)}" style="table-layout: fixed">
+        <tr>
+            <th>ID</th>
+            <th th:text="#{crud.account}"></th>
+            <th th:text="암호"></th>
+            <th th:text="#{crud.check}"></th>
+            <th th:text="#{crud.delete}"></th>
+        </tr>
+        <tr th:each="obj:${list}" align="center">
+            <td th:text="${obj.id}"></td>
+            <td th:text="${obj.uid}"></td>
+            <td th:text="${obj.password}"></td>
+            <td>
+                <form method="GET" th:action="@{/test/{id}(id=${obj.id})}">
+                    <input type="submit" value="login">
+                </form>
+            </td>
+
+            <td>
+                <form method="POST" th:action="@{/test/delete}">
+                    <input type="hidden" name="id" th:value="${obj.id}">
+                    <input type="submit" th:value="#{crud.delete}">
+                </form>
+            </td>
+        </tr>
+        </table>
+    <p th:unless="${testForm.isLogin}">
+        <label th:if="${#lists.isEmpty(list)}" th:text="#{crud.empty}"></label>
+    </p>
+
+</body>
+</html>
