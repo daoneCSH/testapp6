@@ -24,6 +24,6 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column(columnDefinition = "boolean default false")
-    private boolean encode;
+    @Column(nullable = false)
+    private String testText;
 }

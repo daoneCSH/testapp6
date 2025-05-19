@@ -1,5 +1,6 @@
 package com.springboot.testapp6.controller;
 
+import com.springboot.testapp6.config.DataSourceConfig;
 import com.springboot.testapp6.domain.User;
 import com.springboot.testapp6.form.TestForm;
 import com.springboot.testapp6.service.TestService;
@@ -39,6 +40,10 @@ public class TestController {
 //        setUpForm();
         //목록 취득
         Iterable<User> list = service.selectAll();
+        if (list == null) {
+            return "crud";
+        }
+
 
         //표시용 모델에 저장
         model.addAttribute("list", list);
@@ -155,11 +160,11 @@ public class TestController {
         try {
             setUpForm();
             session.setAttribute("selectedDb", db);
-            redirectAttributes.addFlashAttribute("changedDBcomplete", db + "로 변경 되었습니다.");
+            redirectAttributes.addFlashAttribute("changedDBcomplete", DataSourceConfig.getDataSourceMap().get(db) + "로 변경 되었습니다.");
             return "redirect:/test";
 
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("changedDBcomplete", db + " 변경 실패");
+            redirectAttributes.addFlashAttribute("changedDBcomplete", DataSourceConfig.getDataSourceMap().get(db) + " 변경 실패");
         }
         return "redirect:/test";
     }

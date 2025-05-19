@@ -1,11 +1,16 @@
 package com.springboot.testapp6.service;
 
+import com.springboot.testapp6.config.DataSourceConfig;
+import com.springboot.testapp6.config.DynamicDataSource;
 import com.springboot.testapp6.dao.UserDao;
 import com.springboot.testapp6.domain.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+
+import java.util.Collections;
 
 @Slf4j
 @Service
@@ -15,9 +20,17 @@ public class TestServiceImpl implements TestService {
     @Autowired
     UserDao dao;
 
+    @Transactional(noRollbackFor = Exception.class)
     @Override
     public Iterable<User> selectAll() {
-        return dao.selectAll();
+        try {
+            return dao.selectAll();
+        }
+        catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            log.error("tb_user 테이블이 없거나 접근 불가: {}", e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     @Override

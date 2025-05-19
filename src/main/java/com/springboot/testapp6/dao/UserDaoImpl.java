@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Optional;
 
 @Slf4j
@@ -33,13 +34,21 @@ public class UserDaoImpl implements UserDao {
 //            throw new IllegalArgumentException("이미 존재하는 값입니다: " + user.getUid());
             return null;
         }
-//        if (user.isEncode()) {
-//            user.setPassword(PacketCrypto.encryptEncodeBase64(user.getPassword().getBytes(),keyString));
-//        }
-//        return repository.save(user);
-        repository.saveUserWithEncryption(user.getUid(), user.getPassword());
+
+        String txt = createTestCryptText(user.getUid(), user.getPassword());
+        repository.saveUserWithEncryption(user.getUid(), user.getPassword(), txt);
         return repository.findByUid(user.getUid()).orElse(null);
     }
+
+    String createTestCryptText(String s1,  String s2){
+        StringBuilder sb = new StringBuilder();
+        while (sb.length() < 20) {
+            sb.append(s1);
+            sb.append(s2);
+        }
+        return sb.toString();
+    }
+
 
     @Override
     public User selectUser(Long id) {
@@ -71,14 +80,8 @@ public class UserDaoImpl implements UserDao {
         }
 
         String dep;
-//        if (u.get().isEncode()) {
-//            dep = new String(PacketCrypto.decryptDecodeBase64(u.get().getPassword(),keyString));
-//        } else {
-//            dep = u.get().getPassword();
-//        }
-
         dep = u.get().getPassword();
-        log.info("checkAccountPassword name:{} input:{} Decode:{}", username, myPassword, dep);
+        log.info("checkAccountPassword name:{} input:{} Decode:{} Decode2:{}", username, myPassword, dep, u.get().getTestText());
         if(dep.equals(myPassword)) {
             check = true;
         }

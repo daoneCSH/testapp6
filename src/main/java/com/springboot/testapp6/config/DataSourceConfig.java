@@ -1,8 +1,11 @@
 package com.springboot.testapp6.config;
 
+import com.springboot.testapp6.config.filter.DataSourceFilter;
+import com.springboot.testapp6.domain.DatabaseProperties;
 import jakarta.persistence.EntityManagerFactory;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -14,10 +17,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
+@RequiredArgsConstructor
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(
@@ -25,84 +28,65 @@ import java.util.Map;
         entityManagerFactoryRef = "entityManagerFactory",
         transactionManagerRef = "transactionManager"
 )
-
 public class DataSourceConfig {
-    private static final String MARIADB_URL = "jdbc:mariadb://localhost:3307/testdb";
-    private static final String MARIADB_USER = "root";
-    private static final String MARIADB_PASSWORD = "1234";
-    private static final String MARIADB_DRIVER = "org.mariadb.jdbc.Driver";
+    private final MultiDatabaseSettings multiDatabaseSettings;
 
-    private static final String PGSQL_URL = "jdbc:postgresql://localhost:5432/testdb";
-    private static final String PGSQL_USER = "root";
-    private static final String PGSQL_PASSWORD = "1234";
-    private static final String PGSQL_DRIVER = "org.postgresql.Driver";
+    @Getter
+    private static Map<String, DataSource> dataSourceMap = new HashMap<>();
 
-    private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/testdb";
-    private static final String MYSQL_USER = "root";
-    private static final String MYSQL_PASSWORD = "1234";
-    private static final String MYSQL_DRIVER = "com.mysql.cj.jdbc.Driver";
-
-    private static final String ORACLE_URL = "jdbc:oracle:thin:@localhost:1521:xe";
-    private static final String ORACLE_USER = "root";
-    private static final String ORACLE_PASSWORD = "1234";
-    private static final String ORACLE_DRIVER = "oracle.jdbc.OracleDriver";
-
-    @Bean
-    public DataSource db1() {
-        return DataSourceBuilder.create()
-                .url(MARIADB_URL)
-                .username(MARIADB_USER)
-                .password(MARIADB_PASSWORD)
-                .driverClassName(MARIADB_DRIVER)
-                .build();
-    }
-
-    @Bean
-    public DataSource db2() {
-        return DataSourceBuilder.create()
-                .url(PGSQL_URL)
-                .username(PGSQL_USER)
-                .password(PGSQL_PASSWORD)
-                .driverClassName(PGSQL_DRIVER)
-                .build();
-    }
-
-    @Bean
-    public DataSource db3() {
-        return DataSourceBuilder.create()
-                .url(MYSQL_URL)
-                .username(MYSQL_USER)
-                .password(MYSQL_PASSWORD)
-                .driverClassName(MYSQL_DRIVER)
-                .build();
-    }
-
-//    @Bean
-//    public DataSource db4() {
-//        return DataSourceBuilder.create()
-//                .url(ORACLE_URL)
-//                .username(ORACLE_USER)
-//                .password(ORACLE_PASSWORD)
-//                .driverClassName(ORACLE_DRIVER)
-//                .build();
-//    }
+    @Getter
+    private static List<String> dataSourceKeyList = new ArrayList<>();
 
     @Primary
     @Bean
     public DataSource dynamicDataSource() {
-        Map<Object, Object> dataSources = new HashMap<>();
-        dataSources.put("DB1", db1());
-        dataSources.put("DB2", db2());
-        dataSources.put("DB3", db3());
-//        dataSources.put("DB4", db4());
-        dataSources.put("MARIADB", db1());
-        dataSources.put("PGSQL", db2());
-        dataSources.put("MYSQL", db3());
-//        dataSources.put("ORACLE", db4());
+        Map<Object, Object> targetDataSources = new HashMap<>();
+        List<String> availableKeys = new ArrayList<>();
+
+        for (Map.Entry<String, DatabaseProperties> entry : multiDatabaseSettings.getDBs().entrySet()) {
+            String key = entry.getKey();
+            try {
+                DataSource ds = entry.getValue().getDataSource();
+                ds.getConnection().close();
+                targetDataSources.put(key, ds);
+                availableKeys.add(key);
+                log.info("✅ {} 연결 성공!", key);
+                dataSourceKeyList.add(key);
+            } catch (Exception e) {
+                log.warn("❌ {} 연결 실패: {}", key, e.getMessage());
+            }
+        }
+
+
+        if (availableKeys.isEmpty()) {
+            throw new IllegalStateException("❌ 사용할 수 있는 DB가 없습니다.");
+        }
+
+        // ✅ 사용자에게 선택지 제공
+        System.out.println("사용 가능한 DB 목록:");
+        for (int i = 0; i < availableKeys.size(); i++) {
+            System.out.printf("  [%d] %s\n", i + 1, availableKeys.get(i));
+        }
+
+        int selection = -1;
+        Scanner scanner = new Scanner(System.in);
+        while (selection < 1 || selection > availableKeys.size()) {
+            System.out.print("사용할 DB 번호를 입력하세요: ");
+            if (scanner.hasNextInt()) {
+                selection = scanner.nextInt();
+            } else {
+                scanner.next(); // 잘못된 입력 무시
+            }
+        }
+
+        String selectedKey = availableKeys.get(selection - 1);
+        System.out.println("✅ 선택된 DB: " + selectedKey);
+
+        DynamicDataSource.setDataSourceKey(selectedKey);
 
         DynamicDataSource routingDataSource = new DynamicDataSource();
-        routingDataSource.setDefaultTargetDataSource(db1());
-        routingDataSource.setTargetDataSources(dataSources);
+        routingDataSource.setTargetDataSources(targetDataSources);
+        routingDataSource.setDefaultTargetDataSource(targetDataSources.get(selectedKey));
         return routingDataSource;
     }
 
@@ -114,9 +98,16 @@ public class DataSourceConfig {
         emf.setPackagesToScan("com.springboot.testapp6.domain"); // 엔티티 경로
         emf.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
+        String key = DynamicDataSource.getNowKey();
+
         Map<String, Object> jpaProps = new HashMap<>();
-        jpaProps.put("hibernate.hbm2ddl.auto", "update");
+        jpaProps.put("hibernate.hbm2ddl.auto", "update");  // 테이블 자동 생성
         jpaProps.put("hibernate.format_sql", "true");
+        try {
+            jpaProps.put("hibernate.dialect", multiDatabaseSettings.getDBs().get(key).getPlatform());
+        } catch (Exception e) {
+            log.error("❌ {} dialect 추가 실패:{}",key, e.getMessage());
+        }
 
         emf.setJpaPropertyMap(jpaProps);
 

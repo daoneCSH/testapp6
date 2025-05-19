@@ -4,17 +4,20 @@
     <meta charset="UTF-8">
     <title th:text="${title}">Title</title>
     <form id="dbForm" method="GET" th:action="@{/test/set}">
-        <label>
-            <input type="radio" name="db" value="DB1" th:checked="${selectedDb} == 'DB1' or ${selectedDb} == null" onchange="document.getElementById('dbForm').submit()"> MARIADB
-        </label>
-        <label>
-            <input type="radio" name="db" value="DB2" th:checked="${selectedDb} == 'DB2'" onchange="document.getElementById('dbForm').submit()"> PGSQL
-        </label>
-        <label>
-            <input type="radio" name="db" value="DB3" th:checked="${selectedDb} == 'DB3'" onchange="document.getElementById('dbForm').submit()"> MYSQL
-        </label>
+<!--        <label>-->
+<!--            <input type="radio" name="db" value="DB1" th:checked="${selectedDb} == 'DB1' or ${selectedDb} == null" onchange="document.getElementById('dbForm').submit()"> MARIADB-->
+<!--        </label>-->
+<!--        <label>-->
+<!--            <input type="radio" name="db" value="DB2" th:checked="${selectedDb} == 'DB2'" onchange="document.getElementById('dbForm').submit()"> PGSQL-->
+<!--        </label>-->
+<!--        <label>-->
+<!--            <input type="radio" name="db" value="DB3" th:checked="${selectedDb} == 'DB3'" onchange="document.getElementById('dbForm').submit()"> MYSQL-->
+<!--        </label>-->
 <!--        <label>-->
 <!--            <input type="radio" name="db" value="DB4" th:checked="${selectedDb} == 'DB4'" onchange="document.getElementById('dbForm').submit()"> ORACLE-->
+<!--        </label>-->
+<!--        <label>-->
+<!--            <input type="radio" name="db" value="DB5" th:checked="${selectedDb} == 'DB5'" onchange="document.getElementById('dbForm').submit()"> TIBERO-->
 <!--        </label>-->
     </form>
 </head>
@@ -52,6 +55,7 @@
             <th>ID</th>
             <th th:text="#{crud.account}"></th>
             <th th:text="암호"></th>
+            <th th:text="#{crud.test}"></th>
             <th th:text="#{crud.check}"></th>
             <th th:text="#{crud.delete}"></th>
         </tr>
@@ -59,6 +63,7 @@
             <td th:text="${obj.id}"></td>
             <td th:text="${obj.uid}"></td>
             <td th:text="${obj.password}"></td>
+            <td th:text="${obj.testText}"></td>
             <td>
                 <form method="GET" th:action="@{/test/{id}(id=${obj.id})}">
                     <input type="submit" value="login">

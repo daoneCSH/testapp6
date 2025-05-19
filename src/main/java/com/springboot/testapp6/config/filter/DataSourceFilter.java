@@ -20,13 +20,16 @@ public class DataSourceFilter extends OncePerRequestFilter {
     public static void setDB(String dbKey) {
         LAST_DB = dbKey;
     }
+    public static String getDB() {
+         return LAST_DB;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
         String dbKey = request.getParameter("db");
-
+        log.info("dbKey={} LAST_DB={}", dbKey, LAST_DB);
         if (dbKey != null && !dbKey.isBlank()) {
             LAST_DB = dbKey;
         }
