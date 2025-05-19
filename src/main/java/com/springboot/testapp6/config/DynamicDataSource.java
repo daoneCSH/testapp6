@@ -1,5 +1,6 @@
 package com.springboot.testapp6.config;
 
+import com.springboot.testapp6.config.filter.DataSourceFilter;
 import lombok.Getter;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
@@ -11,6 +12,7 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 
     public static void setDataSourceKey(String key) {
         nowKey = key;
+        DataSourceFilter.setDB(nowKey);
         contextHolder.set(key);
     }
 

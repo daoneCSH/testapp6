@@ -1,11 +1,11 @@
 package com.springboot.testapp6.config;
 
-import com.springboot.testapp6.config.filter.DataSourceFilter;
 import com.springboot.testapp6.domain.DatabaseProperties;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -30,6 +30,12 @@ import java.util.*;
 )
 public class DataSourceConfig {
     private final MultiDatabaseSettings multiDatabaseSettings;
+
+    @Value("${feature.interactive-db-select:false}")
+    private boolean interactiveMode;
+
+    @Value("${datasource.active-key:mariadb}")
+    private String activeKey;
 
     @Getter
     private static Map<String, DataSource> dataSourceMap = new HashMap<>();
@@ -62,25 +68,42 @@ public class DataSourceConfig {
             throw new IllegalStateException("❌ 사용할 수 있는 DB가 없습니다.");
         }
 
-        // ✅ 사용자에게 선택지 제공
-        System.out.println("사용 가능한 DB 목록:");
-        for (int i = 0; i < availableKeys.size(); i++) {
-            System.out.printf("  [%d] %s\n", i + 1, availableKeys.get(i));
-        }
+        String selectedKey;
 
-        int selection = -1;
-        Scanner scanner = new Scanner(System.in);
-        while (selection < 1 || selection > availableKeys.size()) {
-            System.out.print("사용할 DB 번호를 입력하세요: ");
-            if (scanner.hasNextInt()) {
-                selection = scanner.nextInt();
+        //콘솔에서 선택 기능은 빌드 버전에서는 안됨
+        if (interactiveMode) {
+            if (availableKeys.size() > 1) {
+                int selection = -1;
+                // ✅ 사용자에게 선택지 제공
+                log.info("✅ 사용 가능한 DB 목록:");
+                for (int i = 0; i < availableKeys.size(); i++) {
+                    System.out.printf("  [%d] %s\n", i + 1, availableKeys.get(i));
+                }
+
+                Scanner scanner = new Scanner(System.in);
+                while (selection < 1 || selection > availableKeys.size()) {
+                    System.out.print("사용할 DB 번호를 입력하세요: ");
+                    if (scanner.hasNextInt()) {
+                        selection = scanner.nextInt();
+                    } else {
+                        scanner.next(); // 잘못된 입력 무시
+                    }
+                }
+                selectedKey = availableKeys.get(selection - 1);
             } else {
-                scanner.next(); // 잘못된 입력 무시
+                selectedKey = availableKeys.get(0);
+            }
+            log.info("✅ 선택된 DB:{}", selectedKey);
+        } else {
+            if (availableKeys.contains(activeKey)) {
+                selectedKey = activeKey;
+                log.info("✅ 선택된 DB:{}", selectedKey);
+            } else {
+                selectedKey = availableKeys.get(0);
+                log.info("❌ 사용불가 DB:{}", activeKey);
+                log.info("✅ 대체 DB:{}", selectedKey);
             }
         }
-
-        String selectedKey = availableKeys.get(selection - 1);
-        System.out.println("✅ 선택된 DB: " + selectedKey);
 
         DynamicDataSource.setDataSourceKey(selectedKey);
 
