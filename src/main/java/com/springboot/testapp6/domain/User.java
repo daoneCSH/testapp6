@@ -18,12 +18,14 @@ public class User {
     private long id;
 
     @Column(nullable = false, unique = true)
-    private String uid;
+    private String userid;
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(nullable = false)
     private String password;
 
     @Column(nullable = false)
-    private String testText;
+    private String testtext;
+
+    public static String GetTableName = "tb_user";
 }

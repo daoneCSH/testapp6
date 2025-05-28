@@ -5,7 +5,9 @@ import jakarta.persistence.EntityManagerFactory;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -17,6 +19,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.util.*;
 
 @Slf4j
@@ -30,6 +33,9 @@ import java.util.*;
 )
 public class DataSourceConfig {
     private final MultiDatabaseSettings multiDatabaseSettings;
+
+    @Autowired
+    private InitializerDatabase initializer;
 
     @Value("${feature.interactive-db-select:false}")
     private boolean interactiveMode;
@@ -51,58 +57,54 @@ public class DataSourceConfig {
 
         for (Map.Entry<String, DatabaseProperties> entry : multiDatabaseSettings.getDBs().entrySet()) {
             String key = entry.getKey();
+            Boolean isConnet = false;
             try {
                 DataSource ds = entry.getValue().getDataSource();
-                ds.getConnection().close();
-                targetDataSources.put(key, ds);
-                availableKeys.add(key);
-                log.info("✅ {} 연결 성공!", key);
-                dataSourceKeyList.add(key);
+                try (Connection conn = ds.getConnection()) {
+                    isConnet = true;
+                    log.info("✅ {} 연결 성공!", key);
+                    try {
+                        initializer.tableExists(conn, key, "tb_user");
+                    } catch (Exception e) {
+                        log.error("❌ {} 테이블 확인 실패! e:{}", key, e.getMessage());
+                    }
+
+                    try {
+                        initializer.functionExists(conn, key);
+                    } catch (Exception e) {
+                        log.error("❌ {} 함수 확인 실패! e:{}", key, e.getMessage());
+                    }
+                } catch (Exception e) {
+                    log.warn("❌ {} 연결 실패: {}", key, e.getMessage());
+                }
+
+                if (isConnet) {
+                    ds.getConnection().close();
+                    targetDataSources.put(key, ds);
+                    dataSourceMap.put(key, ds);
+                    availableKeys.add(key);
+
+                    dataSourceKeyList.add(key);
+                }
             } catch (Exception e) {
                 log.warn("❌ {} 연결 실패: {}", key, e.getMessage());
             }
         }
 
-
         if (availableKeys.isEmpty()) {
-            throw new IllegalStateException("❌ 사용할 수 있는 DB가 없습니다.");
+            log.error("❌ 사용할 수 있는 DB가 없습니다. 앱을 종료합니다.");
+            // 사용할 수 있는 DB가 없기 때문에 종료
+            System.exit(1);
         }
 
         String selectedKey;
-
-        //콘솔에서 선택 기능은 빌드 버전에서는 안됨
-        if (interactiveMode) {
-            if (availableKeys.size() > 1) {
-                int selection = -1;
-                // ✅ 사용자에게 선택지 제공
-                log.info("✅ 사용 가능한 DB 목록:");
-                for (int i = 0; i < availableKeys.size(); i++) {
-                    System.out.printf("  [%d] %s\n", i + 1, availableKeys.get(i));
-                }
-
-                Scanner scanner = new Scanner(System.in);
-                while (selection < 1 || selection > availableKeys.size()) {
-                    System.out.print("사용할 DB 번호를 입력하세요: ");
-                    if (scanner.hasNextInt()) {
-                        selection = scanner.nextInt();
-                    } else {
-                        scanner.next(); // 잘못된 입력 무시
-                    }
-                }
-                selectedKey = availableKeys.get(selection - 1);
-            } else {
-                selectedKey = availableKeys.get(0);
-            }
+        if (availableKeys.contains(activeKey)) {
+            selectedKey = activeKey;
             log.info("✅ 선택된 DB:{}", selectedKey);
         } else {
-            if (availableKeys.contains(activeKey)) {
-                selectedKey = activeKey;
-                log.info("✅ 선택된 DB:{}", selectedKey);
-            } else {
-                selectedKey = availableKeys.get(0);
-                log.info("❌ 사용불가 DB:{}", activeKey);
-                log.info("✅ 대체 DB:{}", selectedKey);
-            }
+            selectedKey = availableKeys.get(0);
+            log.info("❌ 사용불가 DB:{}", activeKey);
+            log.info("✅ 대체 DB:{}", selectedKey);
         }
 
         DynamicDataSource.setDataSourceKey(selectedKey);
@@ -124,10 +126,21 @@ public class DataSourceConfig {
         String key = DynamicDataSource.getNowKey();
 
         Map<String, Object> jpaProps = new HashMap<>();
-        jpaProps.put("hibernate.hbm2ddl.auto", "update");  // 테이블 자동 생성
-        jpaProps.put("hibernate.format_sql", "true");
+
+        boolean useJPA = multiDatabaseSettings.getDBs().get(key).getUseJSP();
+        if (useJPA) {
+            jpaProps.put("hibernate.hbm2ddl.auto", "update");  // 테이블 자동 생성
+            jpaProps.put("hibernate.format_sql", "true");
+        } else {
+            jpaProps.put("hibernate.hbm2ddl.auto", "none");  // 테이블 자동 생성
+            jpaProps.put("hibernate.format_sql", "false");
+            jpaProps.put("hibernate.id.new_generator_mappings", "false");
+        }
         try {
-            jpaProps.put("hibernate.dialect", multiDatabaseSettings.getDBs().get(key).getPlatform());
+            String platform = multiDatabaseSettings.getDBs().get(key).getPlatform();
+            if (!platform.isEmpty()) {
+                jpaProps.put("hibernate.dialect", platform);
+            }
         } catch (Exception e) {
             log.error("❌ {} dialect 추가 실패:{}",key, e.getMessage());
         }

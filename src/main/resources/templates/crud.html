@@ -3,28 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <title th:text="${title}">Title</title>
-    <form id="dbForm" method="GET" th:action="@{/test/set}">
-<!--        <label>-->
-<!--            <input type="radio" name="db" value="DB1" th:checked="${selectedDb} == 'DB1' or ${selectedDb} == null" onchange="document.getElementById('dbForm').submit()"> MARIADB-->
-<!--        </label>-->
-<!--        <label>-->
-<!--            <input type="radio" name="db" value="DB2" th:checked="${selectedDb} == 'DB2'" onchange="document.getElementById('dbForm').submit()"> PGSQL-->
-<!--        </label>-->
-<!--        <label>-->
-<!--            <input type="radio" name="db" value="DB3" th:checked="${selectedDb} == 'DB3'" onchange="document.getElementById('dbForm').submit()"> MYSQL-->
-<!--        </label>-->
-<!--        <label>-->
-<!--            <input type="radio" name="db" value="DB4" th:checked="${selectedDb} == 'DB4'" onchange="document.getElementById('dbForm').submit()"> ORACLE-->
-<!--        </label>-->
-<!--        <label>-->
-<!--            <input type="radio" name="db" value="DB5" th:checked="${selectedDb} == 'DB5'" onchange="document.getElementById('dbForm').submit()"> TIBERO-->
-<!--        </label>-->
+    <form id="dbForm" method="get" action="/test/selectDb">
+        <div th:each="dbCode : ${dbList}">
+            <label>
+                <input type="radio"
+                       name="db"
+                       th:value="${dbCode}"
+                       th:checked="${selectedDb} == ${dbCode}"
+                       th:text="${dbCode}"
+                       onchange="document.getElementById('dbForm').submit()" />
+            </label>
+        </div>
     </form>
 </head>
 <body>
     <h1 th:text="#{crud.title}">title</h1>
+    <h2 th:text="${selectedDb}">selectDB</h2>
     <p th:if="${complete}" th:text="${complete}" style="color: blue;"></p>
-
+    <p th:if="${errmgs}" th:text="${errmgs}" style="color: red;"></p>
     <form method="POST"
           th:action="${testForm.isLogin}? @{/test/check} : @{/test/insert}"
           th:object="${testForm}">
@@ -47,7 +43,7 @@
         <label th:text="#{crud.login}"></label>
     </p>
     <p th:if="${delcomplete}" th:text="${delcomplete}" style="color:blue"></p>
-    <p th:if="${checkcomplete}" th:text="${checkcomplete}" style="color: blue;"></p>
+    <p th:if="${checkcomplete}" th:utext="${checkcomplete}" style="color: blue;"></p>
     <p th:if="${changedDBcomplete}" th:text="${changedDBcomplete}" style="color: blue;"></p>
     <p th:if="${msg}" th:text="${msg}" style="color:red"></p>
     <table border="1" th:unless="${#lists.isEmpty(list)}" style="table-layout: fixed">
@@ -61,9 +57,9 @@
         </tr>
         <tr th:each="obj:${list}" align="center">
             <td th:text="${obj.id}"></td>
-            <td th:text="${obj.uid}"></td>
+            <td th:text="${obj.userid}"></td>
             <td th:text="${obj.password}"></td>
-            <td th:text="${obj.testText}"></td>
+            <td th:text="${obj.testtext}"></td>
             <td>
                 <form method="GET" th:action="@{/test/{id}(id=${obj.id})}">
                     <input type="submit" value="login">

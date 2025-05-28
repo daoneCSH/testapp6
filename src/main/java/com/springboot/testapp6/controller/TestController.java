@@ -1,7 +1,10 @@
 package com.springboot.testapp6.controller;
 
 import com.springboot.testapp6.config.DataSourceConfig;
+import com.springboot.testapp6.config.DynamicDataSource;
 import com.springboot.testapp6.domain.User;
+import com.springboot.testapp6.dto.ResultCheckUser;
+import com.springboot.testapp6.dto.ResultCheckUsers;
 import com.springboot.testapp6.form.TestForm;
 import com.springboot.testapp6.service.TestService;
 import jakarta.servlet.http.HttpSession;
@@ -13,6 +16,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.sql.SQLException;
 
 /** Test 애플리케이션 컨트롤러 */
 @Slf4j
@@ -36,19 +41,18 @@ public class TestController {
      * 데이터 목록 표시
      */
     @GetMapping
-    public String showList(TestForm form, Model model, HttpSession session) {
+    public String showList(TestForm form, Model model, HttpSession session) throws SQLException {
 //        setUpForm();
         //목록 취득
-        Iterable<User> list = service.selectAll();
-        if (list == null) {
-            return "crud";
+        ResultCheckUsers result = service.selectAll();
+        if (!result.isCheck()) {
+            model.addAttribute("errmgs", result.getMessage());
         }
 
-
         //표시용 모델에 저장
-        model.addAttribute("list", list);
-        String db = (String) session.getAttribute("selectedDb");
-        model.addAttribute("selectedDb", db != null ? db : "DB1"); // 기본값 DB1
+        model.addAttribute("list", result.getUsers());
+        model.addAttribute("dbList", DataSourceConfig.getDataSourceKeyList());
+        model.addAttribute("selectedDb", DynamicDataSource.getNowKey());
         return "crud";
     }
 
@@ -64,11 +68,16 @@ public class TestController {
         //입력 체크
         if (!bindingResult.hasErrors()) {
             try {
-                service.insert(data);
-                redirectAttributes.addFlashAttribute("complete", "등록이 완료되었습니다.");
+                ResultCheckUser result = service.insert(data);
+                if (result.isCheck()) {
+                    redirectAttributes.addFlashAttribute("complete", "등록이 완료되었습니다.");
+                } else {
+                    redirectAttributes.addFlashAttribute("complete", result.getMessage());
+                }
                 return "redirect:/test";
             }
             catch (Exception e) {
+                log.error("🚨 insertUser 중 오류 발생: {}", e.getMessage());
                 redirectAttributes.addFlashAttribute("complete", "등록에 실패했습니다.");
                 return "redirect:/test";
             }
@@ -81,18 +90,23 @@ public class TestController {
 
     @PostMapping("/check")
     public String check(@Validated TestForm form, RedirectAttributes redirectAttributes) throws Exception {
+        StringBuilder txt = new StringBuilder();
         try {
-            boolean c = service.checkAccountPassword(form.getUid(), form.getPassword());
-
+            ResultCheckUser result = service.checkAccountPassword(form.getUid(), form.getPassword());
+            boolean c = result.isCheck();
+            txt.append("decode pw:" + result.getUser().getPassword() + "<br/>");
+            txt.append("decode txt:" + result.getUser().getTesttext()+ "<br/>");
             if (c) {
-                redirectAttributes.addFlashAttribute("checkcomplete", "암호가 맞습니다");
+                txt.append("암호가 맞습니다.");
+                redirectAttributes.addFlashAttribute("checkcomplete", txt);
                 return "redirect:/test";
             }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("checkcomplete", "암호 확인에 실패했습니다.");
             return "redirect:/test";
         }
-        redirectAttributes.addFlashAttribute("checkcomplete", "암호가 틀렸습니다");
+        txt.append("암호가 틀렸습니다.");
+        redirectAttributes.addFlashAttribute("checkcomplete", txt);
         return "redirect:/test";
     }
 
@@ -128,7 +142,7 @@ public class TestController {
         User data = new User();
         data.setId(form.getId());
         data.setPassword(form.getPassword());
-        data.setUid(form.getUid());
+        data.setUserid(form.getUid());
         return data;
     }
 
@@ -138,7 +152,7 @@ public class TestController {
     private TestForm makeForm(User data) {
         TestForm form = new TestForm();
         form.setId(data.getId());
-        form.setUid(data.getUid());
+        form.setUid(data.getUserid());
 //        form.setPassword(data.getValue());
         form.setIsLogin(true);
         return form;
@@ -155,16 +169,16 @@ public class TestController {
         return "redirect:/test";
     }
 
-    @GetMapping("/set")
+    @GetMapping("/selectDb")
     public String setDb(@RequestParam("db") String db, HttpSession session, RedirectAttributes redirectAttributes) throws Exception {
         try {
             setUpForm();
             session.setAttribute("selectedDb", db);
-            redirectAttributes.addFlashAttribute("changedDBcomplete", DataSourceConfig.getDataSourceMap().get(db) + "로 변경 되었습니다.");
+            redirectAttributes.addFlashAttribute("changedDBcomplete", db + "로 변경 되었습니다.");
             return "redirect:/test";
 
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("changedDBcomplete", DataSourceConfig.getDataSourceMap().get(db) + " 변경 실패");
+            redirectAttributes.addFlashAttribute("changedDBcomplete", db + " 변경 실패");
         }
         return "redirect:/test";
     }

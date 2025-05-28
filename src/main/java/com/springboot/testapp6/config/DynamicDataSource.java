@@ -12,7 +12,6 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 
     public static void setDataSourceKey(String key) {
         nowKey = key;
-        DataSourceFilter.setDB(nowKey);
         contextHolder.set(key);
     }
 

@@ -2,12 +2,18 @@ package com.springboot.testapp6.dao;
 
 import com.springboot.testapp6.commons.crypo.PacketCrypto;
 import com.springboot.testapp6.domain.User;
+import com.springboot.testapp6.dto.ResultCheckUser;
+import com.springboot.testapp6.dto.ResultCheckUsers;
 import com.springboot.testapp6.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -23,21 +29,45 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
-    public Iterable<User> selectAll() {
-        return repository.findAll();
+    public ResultCheckUsers selectAll() {
+        Iterable<User> list = repository.findAll();
+        List<User> users = new ArrayList<>();
+        for (User user : list) {
+            users.add(user);
+        }
+        return ResultCheckUsers.builder()
+                        .users(users)
+                        .build();
     }
 
+    @Transactional
     @Override
-    public User insertUser(User user) throws Exception {
-        if (repository.existsByUid(user.getUid())) {
-            log.error("이미 존재하는 값입니다: " + user.getUid());
+    public ResultCheckUser insertUser(User user) throws Exception {
+        if (repository.existsByUserid(user.getUserid())) {
+            log.error("이미 존재하는 값입니다: " + user.getUserid());
 //            throw new IllegalArgumentException("이미 존재하는 값입니다: " + user.getUid());
-            return null;
+            return ResultCheckUser.builder()
+                    .check(false)
+                    .message("이미 존재하는 값입니다: " + user.getUserid())
+                    .build();
         }
 
-        String txt = createTestCryptText(user.getUid(), user.getPassword());
-        repository.saveUserWithEncryption(user.getUid(), user.getPassword(), txt);
-        return repository.findByUid(user.getUid()).orElse(null);
+        try {
+            String txt = createTestCryptText(user.getUserid(), user.getPassword());
+            log.info("insertUser userid:{} pw:{} txt:{}", user.getUserid(), user.getPassword(), txt);
+            repository.saveUserWithEncryption(user.getUserid(), user.getPassword(), txt);
+            return ResultCheckUser.builder()
+                    .check(true)
+                    .user(repository.findByUserid(user.getUserid()).orElse(null))
+                    .build();
+        } catch (Exception e) {
+            log.error("🚨 insertUser 중 오류 발생: {}", e.getMessage());
+            return ResultCheckUser.builder()
+                    .check(false)
+                    .message(String.format("🚨 insertUser 중 오류 발생: {}", e.getMessage()))
+                    .build();
+        }
+
     }
 
     String createTestCryptText(String s1,  String s2){
@@ -58,34 +88,36 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public User findUserByKey(String key) {
-        Optional<User> op = repository.findByUid(key);
+        Optional<User> op = repository.findByUserid(key);
         return op.orElse(null);
     }
 
     @Override
-    public boolean checkUser(String username, String myPassword) throws Exception {
-        boolean check = false;
+    public ResultCheckUser checkUser(String username, String myPassword) throws Exception {
+        ResultCheckUser result = new ResultCheckUser();
+
 //        Optional<User> u = repository.findByUid(username);
 
-        Optional<User> u1 = repository.findByUid(username);
+        Optional<User> u1 = repository.findByUserid(username);
         if (!u1.isPresent()) {
             log.info("checkUser [{}]의 유저를 찾을 수 없다.", username);
-            return false;
+            result.setCheck(false);
+            return result;
         }
         Optional<User> u = repository.findUserById(u1.get().getId());
 
         if (!u.isPresent()) {
             log.info("checkUser [{}]의 유저의 정보를 찾을 수 없다. (검색된 ID는 [{}])", username, u1.get().getId());
-            return false;
+            result.setCheck(false);
+            return result;
         }
 
         String dep;
         dep = u.get().getPassword();
-        log.info("checkAccountPassword name:{} input:{} Decode:{} Decode2:{}", username, myPassword, dep, u.get().getTestText());
-        if(dep.equals(myPassword)) {
-            check = true;
-        }
-        return check;
+        result.setUser(u.get());
+        log.info("checkAccountPassword name:{} input:{} Decode:{} Decode2:{}", username, myPassword, dep, u.get().getTesttext());
+        result.setCheck(dep.equals(myPassword));
+        return result;
     }
 
     @Override

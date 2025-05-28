@@ -12,6 +12,7 @@ public class DatabaseProperties {
     String pw;
     String driver;
     String platform;
+    Boolean useJSP;
 
 
     public DataSource getDataSource()

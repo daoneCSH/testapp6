@@ -1,0 +1,35 @@
+CREATE OR REPLACE FUNCTION db_decrypt(attendType VARCHAR)
+RETURNS VARCHAR
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN attendType;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION db_decrypt_full(attendType VARCHAR)
+RETURNS VARCHAR
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN attendType;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION db_encrypt_full(attendType VARCHAR)
+RETURNS VARCHAR
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN attendType;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION db_encrypt(attendType VARCHAR)
+RETURNS VARCHAR
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN attendType;
+END;
+$$;

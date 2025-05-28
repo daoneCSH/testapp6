@@ -14,21 +14,24 @@ import java.io.IOException;
 @Slf4j
 @Component
 public class DataSourceFilter extends OncePerRequestFilter {
-    private static final String DEFAULT_DB = "DB1";
-    private static String LAST_DB = DEFAULT_DB;
+    private static String LAST_DB;
 
-    public static void setDB(String dbKey) {
-        LAST_DB = dbKey;
-    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
         String dbKey = request.getParameter("db");
+//        log.info("dbKey:{} DynamicDataSourcekey:{} LAST_DB:{}", dbKey, DynamicDataSource.getNowKey(), LAST_DB);
+
+        if (LAST_DB == null || LAST_DB.isEmpty() || LAST_DB.isBlank()) {
+            LAST_DB = DynamicDataSource.getNowKey();
+        }
 
         if (dbKey != null && !dbKey.isBlank()) {
-            LAST_DB = dbKey;
+            if (dbKey != DynamicDataSource.getNowKey()) {
+                LAST_DB = dbKey;
+            }
         }
         DynamicDataSource.setDataSourceKey(LAST_DB);
 

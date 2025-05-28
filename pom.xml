@@ -29,7 +29,16 @@
     <properties>
         <java.version>17</java.version>
     </properties>
+    <!--        jar -> war        -->
+<!--    <packaging>war</packaging>-->
     <dependencies>
+<!--        jar -> war        -->
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.boot</groupId>-->
+<!--            <artifactId>spring-boot-starter-tomcat</artifactId>-->
+<!--            <scope>provided</scope>-->
+<!--        </dependency>-->
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jdbc</artifactId>
@@ -62,14 +71,11 @@
             <scope>runtime</scope>
         </dependency>
 
-<!--        티베로-->
-<!--        <dependency>-->
-<!--            <groupId>com.tmax.tibero</groupId>-->
-<!--            <artifactId>tibero-jdbc</artifactId>-->
-<!--            <version>6.0</version>-->
-<!--            <scope>system</scope>-->
-<!--            <systemPath>${basedir}/src/main/webapp/WEB-INF/lib/tibero6-jdbc.jar</systemPath>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>com.tmax.tibero</groupId>
+            <artifactId>tibero-jdbc</artifactId>
+            <version>7.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
@@ -110,6 +116,7 @@
 
     </dependencies>
     <build>
+        <finalName>test</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -138,6 +145,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <includeSystemScope>true</includeSystemScope> <!-- system scope 포함 -->
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
