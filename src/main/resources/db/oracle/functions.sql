@@ -1,0 +1,34 @@
+CREATE OR REPLACE FUNCTION db_decrypt(attendType IN VARCHAR2)
+    RETURN VARCHAR2
+    IS
+BEGIN
+    RETURN attendType;
+END;
+
+CREATE OR REPLACE FUNCTION db_decrypt_full(attendType IN VARCHAR2)
+    RETURN VARCHAR2
+    IS
+BEGIN
+    RETURN attendType;
+END;
+
+CREATE OR REPLACE FUNCTION db_decrypt_full(attendType IN VARCHAR2)
+    RETURN VARCHAR2
+    IS
+BEGIN
+    RETURN attendType;
+END;
+
+CREATE OR REPLACE FUNCTION db_encrypt(attendType IN VARCHAR2)
+    RETURN VARCHAR2
+    IS
+BEGIN
+    RETURN attendType;
+END;
+
+CREATE OR REPLACE FUNCTION db_encrypt_full(attendType IN VARCHAR2)
+    RETURN VARCHAR2
+    IS
+BEGIN
+    RETURN attendType;
+END;

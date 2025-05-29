@@ -1,0 +1,31 @@
+CREATE OR REPLACE FUNCTION db_encrypt_full(p_val VARCHAR2)
+    RETURN VARCHAR2
+    IS
+BEGIN
+    RETURN p_val;
+END;
+/
+
+CREATE OR REPLACE FUNCTION db_encrypt(p_val IN VARCHAR2)
+    RETURN VARCHAR2
+    IS
+BEGIN
+    RETURN p_val;
+END;
+/
+
+CREATE OR REPLACE FUNCTION db_encrypt_full(p_val IN VARCHAR2)
+    RETURN VARCHAR2
+    IS
+BEGIN
+    RETURN p_val;
+END;
+/
+
+CREATE OR REPLACE FUNCTION db_decrypt(p_val IN VARCHAR2)
+    RETURN VARCHAR2
+    IS
+BEGIN
+    RETURN p_val;
+END;
+/

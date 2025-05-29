@@ -1,0 +1,27 @@
+CREATE FUNCTION db_decrypt(attendType VARCHAR(255))
+    RETURNS VARCHAR(255)
+    DETERMINISTIC
+BEGIN
+    RETURN attendType;
+END;
+
+CREATE FUNCTION db_decrypt_full(attendType VARCHAR(255))
+    RETURNS VARCHAR(255)
+    DETERMINISTIC
+BEGIN
+    RETURN attendType;
+END;
+
+CREATE FUNCTION db_encrypt_full(attendType VARCHAR(255))
+    RETURNS VARCHAR(255)
+    DETERMINISTIC
+BEGIN
+    RETURN attendType;
+END;
+
+CREATE FUNCTION db_encrypt(attendType VARCHAR(255))
+    RETURNS VARCHAR(255)
+    DETERMINISTIC
+BEGIN
+    RETURN attendType;
+END;
